@@ -34,7 +34,7 @@ The program allows the user to:
 - Add new vocabulary words
 - Search for a Japanese word
 - Sort vocabulary by study level
-- Add words to a study list
+- Choose word to study list
 - View the study list
 - Calculate the average study level
 - Load vocabulary from `data/vocabulary.txt`

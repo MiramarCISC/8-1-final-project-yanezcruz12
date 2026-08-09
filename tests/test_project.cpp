@@ -1,9 +1,8 @@
-#include "project.hpp"
 #include <cassert>
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <string>
+#include "project.hpp"
 
 using namespace std;
 
@@ -11,169 +10,123 @@ bool nearlyEqual(double actual, double expected, double tolerance = 0.0001) {
     return fabs(actual - expected) <= tolerance;
 }
 
-void createTestInventoryFile(string filename) {
-    ofstream out(filename);
-
-    out << "A100 Apples 10 1.50" << endl;
-    out << "B200 Bread 5 3.25" << endl;
-    out << "C300 Cereal 8 4.75" << endl;
-
-    out.close();
-}
-
 // Week 1: Program Basics
-void testWeek1ProgramBasics() {
-    ScoreList scores;
-    scores.addScore(80.0);
-    scores.addScore(90.0);
+void testAverageStudyLevelCalculation() {
+    VocabularyWord words[2];
 
-    double average = scores.getAverage();
+    words[0] = {"勉強", "study", 4, false};
+    words[1] = {"学校", "school", 2, false};
 
-    assert(nearlyEqual(average, 85.0));
-    assert(Student::determineLetterGrade(95.0) == 'A');
-    assert(Student::determineLetterGrade(65.0) == 'D');
+    double average = calculateAverageStudyLevel(words, 2);
+
+    assert(nearlyEqual(average, 3.0));
 }
 
 // Week 2: Decisions and Loops
-void testWeek2DecisionsAndLoops() {
-    assert(ScoreList::isValidScore(0.0));
-    assert(ScoreList::isValidScore(100.0));
-    assert(!ScoreList::isValidScore(-1.0));
-    assert(!ScoreList::isValidScore(101.0));
-
-    assert(Task::isValidPriority(1));
-    assert(Task::isValidPriority(5));
-    assert(!Task::isValidPriority(0));
-    assert(!Task::isValidPriority(6));
-
-    assert(isValidMenuChoice(0));
-    assert(isValidMenuChoice(4));
-    assert(!isValidMenuChoice(5));
+void testStudyLevelValidation() {
+    assert(isValidStudyLevel(1) == true);
+    assert(isValidStudyLevel(5) == true);
+    assert(isValidStudyLevel(0) == false);
+    assert(isValidStudyLevel(6) == false);
 }
 
 // Week 3: Functions and Program Design
-void testWeek3FunctionsAndProgramDesign() {
-    ScoreList scores;
-    scores.addScore(70.0);
-    scores.addScore(80.0);
-    scores.addScore(90.0);
+void testCountStudyWords() {
+    StudyNode* head = nullptr;
 
-    assert(nearlyEqual(scores.getTotal(), 240.0));
-    assert(nearlyEqual(scores.getAverage(), 80.0));
+    VocabularyWord word1 = {"話す", "speak", 3, false};
+    VocabularyWord word2 = {"読む", "read", 2, false};
 
-    Student student("A123", "Alex");
-    assert(student.getId() == "A123");
-    assert(student.getName() == "Alex");
+    insertStudyWord(head, word1);
+    insertStudyWord(head, word2);
+
+    assert(countStudyWords(head) == 2);
+
+    clearStudyList(head);
 }
 
 // Week 4: Arrays, Searching, and Sorting
-void testWeek4ArraysSearchingSorting() {
-    ScoreList scores;
-    scores.addScore(88.0);
-    scores.addScore(72.5);
-    scores.addScore(100.0);
-    scores.addScore(91.0);
+void testArraySearchAndSort() {
+    VocabularyWord words[3];
 
-    assert(scores.findScore(100.0) == 2);
-    assert(scores.findScore(50.0) == -1);
+    words[0] = {"学校", "school", 5, false};
+    words[1] = {"食べる", "eat", 2, false};
+    words[2] = {"話す", "speak", 4, false};
 
-    scores.sortAscending();
+    assert(findWord(words, 3, "食べる") == 1);
+    assert(findWord(words, 3, "見る") == -1);
 
-    assert(nearlyEqual(scores.getScoreAt(0), 72.5));
-    assert(nearlyEqual(scores.getScoreAt(1), 88.0));
-    assert(nearlyEqual(scores.getScoreAt(2), 91.0));
-    assert(nearlyEqual(scores.getScoreAt(3), 100.0));
+    sortByStudyLevel(words, 3);
+
+    assert(words[0].studyLevel == 2);
+    assert(words[1].studyLevel == 4);
+    assert(words[2].studyLevel == 5);
 }
 
 // Week 5: Strings and Structures
-void testWeek5StringsAndStructures() {
-    Student student("A123", "Alex");
+void testVocabularyStructure() {
+    VocabularyWord word;
 
-    assert(Student::isValidId("A123"));
-    assert(!Student::isValidId("a123"));
-    assert(student.getId() == "A123");
-    assert(student.getName() == "Alex");
+    word.japanese = "先生";
+    word.english = "teacher";
+    word.studyLevel = 5;
+    word.studied = false;
 
-    InventoryItem item = {"B200", "Bread", 5, 3.25};
-    assert(item.sku == "B200");
-    assert(item.name == "Bread");
-    assert(item.quantity == 5);
+    assert(word.japanese == "先生");
+    assert(word.english == "teacher");
+    assert(word.studyLevel == 5);
 }
 
-// Week 6: Simple Linked Task List
-void testWeek6SimpleLinkedTaskList() {
-    TaskList tasks;
+// Week 6: Pointers, Dynamic Memory, and Linked Lists
+void testLinkedStudyList() {
+    StudyNode* head = nullptr;
 
-    tasks.insertFront(Task("homework", 3));
-    tasks.insertFront(Task("study", 5));
-    tasks.insertFront(Task("project", 4));
+    VocabularyWord word = {"勉強", "study", 4, false};
 
-    assert(tasks.countTasks() == 3);
-    assert(tasks.findTask("study") != nullptr);
-    assert(tasks.findTask("missing") == nullptr);
+    insertStudyWord(head, word);
 
-    assert(tasks.markTaskComplete("homework"));
-    assert(tasks.markTaskComplete("project"));
+    assert(head != nullptr);
+    assert(head->data.japanese == "勉強");
+    assert(findStudyWord(head, "勉強") != nullptr);
+    assert(findStudyWord(head, "学校") == nullptr);
 
-    int removed = tasks.removeCompletedTasks();
+    clearStudyList(head);
 
-    assert(removed == 2);
-    assert(tasks.countTasks() == 1);
-    assert(tasks.findTask("study") != nullptr);
-    assert(tasks.findTask("homework") == nullptr);
-
-    tasks.clear();
-    assert(tasks.isEmpty());
+    assert(head == nullptr);
 }
 
-// Week 7: File-Based Inventory Report
-void testWeek7FileBasedInventoryReport() {
-    string inputFilename = "tests/resources/test_inventory_input.txt";
-    string outputFilename = "tests/resources/test_inventory_report_output.txt";
+// Week 7: File I/O and Integration
+void testVocabularyFileLoad() {
+    ofstream output("tests/resources/sample_vocabulary.txt");
 
-    createTestInventoryFile(inputFilename);
+    output << "勉強 study 4" << endl;
+    output << "学校 school 5" << endl;
+    output.close();
 
-    InventoryItem items[10];
-    int count = InventoryReport::readInventoryFile(inputFilename, items, 10);
+    VocabularyWord words[10];
 
-    assert(count == 3);
-    assert(items[0].sku == "A100");
-    assert(items[2].name == "Cereal");
+    int count = loadVocabularyFromFile(
+        "tests/resources/sample_vocabulary.txt",
+        words,
+        10
+    );
 
-    assert(nearlyEqual(InventoryReport::calculateItemValue(items[0]), 15.0));
-    assert(nearlyEqual(InventoryReport::calculateTotalInventoryValue(items, count), 69.25));
-
-    assert(InventoryReport::findItemBySku(items, count, "B200") == 1);
-    assert(InventoryReport::findItemBySku(items, count, "Z999") == -1);
-    assert(InventoryReport::findHighestValueItemIndex(items, count) == 2);
-
-    bool wroteReport = InventoryReport::writeInventoryReport(outputFilename, items, count);
-    assert(wroteReport);
-
-    ifstream in(outputFilename);
-    assert(in.is_open());
-
-    string contents;
-    string line;
-
-    while (getline(in, line)) {
-        contents += line + "\n";
-    }
-
-    assert(contents.find("Inventory Report") != string::npos);
-    assert(contents.find("A100") != string::npos);
-    assert(contents.find("Total inventory value") != string::npos);
+    assert(count == 2);
+    assert(words[0].japanese == "勉強");
+    assert(words[1].english == "school");
+    assert(words[1].studyLevel == 5);
 }
 
 int main() {
-    testWeek1ProgramBasics();
-    testWeek2DecisionsAndLoops();
-    testWeek3FunctionsAndProgramDesign();
-    testWeek4ArraysSearchingSorting();
-    testWeek5StringsAndStructures();
-    testWeek6SimpleLinkedTaskList();
-    testWeek7FileBasedInventoryReport();
+    testAverageStudyLevelCalculation();
+    testStudyLevelValidation();
+    testCountStudyWords();
+    testArraySearchAndSort();
+    testVocabularyStructure();
+    testLinkedStudyList();
+    testVocabularyFileLoad();
 
-    cout << "All corrected final project template tests passed!" << endl;
+    cout << "All final project tests passed!" << endl;
+
     return 0;
 }

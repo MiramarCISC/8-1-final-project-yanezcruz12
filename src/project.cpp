@@ -1,66 +1,40 @@
 #include "project.hpp"
 #include <fstream>
-#include <iomanip>
 #include <iostream>
 
 using namespace std;
 
-// ===============================
-// ScoreList
-// ===============================
-
-ScoreList::ScoreList() {
-    count = 0;
-
-    for (int i = 0; i < 10; i++) {
-        scores[i] = 0.0;
-    }
+// Checks if study level is between 1 and 5.
+bool isValidStudyLevel(int studyLevel) {
+    return studyLevel >= 1 && studyLevel <= 5;
 }
 
-bool ScoreList::addScore(double score) {
-    if (!isValidScore(score) || count >= 10) {
-        return false;
-    }
-
-    scores[count] = score;
-    count++;
-
-    return true;
-}
-
-int ScoreList::getCount() const {
-    return count;
-}
-
-double ScoreList::getScoreAt(int index) const {
-    if (index < 0 || index >= count) {
+// Calculates the average study level.
+double calculateAverageStudyLevel(
+    const VocabularyWord words[],
+    int count
+) {
+    if (count <= 0) {
         return 0.0;
     }
 
-    return scores[index];
-}
-
-double ScoreList::getTotal() const {
-    double total = 0.0;
+    int total = 0;
 
     for (int i = 0; i < count; i++) {
-        total += scores[i];
+        total += words[i].studyLevel;
     }
 
-    return total;
+    return static_cast<double>(total) / count;
 }
 
-double ScoreList::getAverage() const {
-    if (count == 0) {
-        return 0.0;
-    }
-
-    return getTotal() / count;
-}
-
-int ScoreList::findScore(double target) const {
+// Searches for a Japanese vocabulary word.
+int findWord(
+    const VocabularyWord words[],
+    int count,
+    string japanese
+) {
     for (int i = 0; i < count; i++) {
-        if (scores[i] == target) {
+        if (words[i].japanese == japanese) {
             return i;
         }
     }
@@ -68,146 +42,87 @@ int ScoreList::findScore(double target) const {
     return -1;
 }
 
-void ScoreList::sortAscending() {
+// Sorts vocabulary by study level.
+void sortByStudyLevel(
+    VocabularyWord words[],
+    int count
+) {
     for (int start = 0; start < count - 1; start++) {
         int minIndex = start;
 
         for (int i = start + 1; i < count; i++) {
-            if (scores[i] < scores[minIndex]) {
+            if (words[i].studyLevel < words[minIndex].studyLevel) {
                 minIndex = i;
             }
         }
 
-        double temp = scores[start];
-        scores[start] = scores[minIndex];
-        scores[minIndex] = temp;
+        VocabularyWord temp = words[start];
+        words[start] = words[minIndex];
+        words[minIndex] = temp;
     }
 }
 
-bool ScoreList::isValidScore(double score) {
-    return score >= 0.0 && score <= 100.0;
+// Prints one vocabulary word.
+void printWord(const VocabularyWord& word) {
+    cout << word.japanese
+         << " - "
+         << word.english
+         << " | Study Level: "
+         << word.studyLevel;
+
+    if (word.studied) {
+        cout << " | Studied";
+    }
+
+    cout << endl;
 }
 
-// ===============================
-// Student
-// ===============================
-
-Student::Student() {
-    id = "";
-    name = "";
-}
-
-Student::Student(string studentId, string studentName) {
-    id = studentId;
-    name = studentName;
-}
-
-string Student::getId() const {
-    return id;
-}
-
-string Student::getName() const {
-    return name;
-}
-
-ScoreList& Student::getScoreList() {
-    return scoreList;
-}
-
-const ScoreList& Student::getScoreList() const {
-    return scoreList;
-}
-
-double Student::getAverage() const {
-    return scoreList.getAverage();
-}
-
-char Student::getLetterGrade() const {
-    return determineLetterGrade(getAverage());
-}
-
-bool Student::isValidId(string id) {
-    return id.length() >= 3 && id[0] >= 'A' && id[0] <= 'Z';
-}
-
-char Student::determineLetterGrade(double average) {
-    if (average >= A_MINIMUM) {
-        return 'A';
-    } else if (average >= B_MINIMUM) {
-        return 'B';
-    } else if (average >= C_MINIMUM) {
-        return 'C';
-    } else if (average >= D_MINIMUM) {
-        return 'D';
-    } else {
-        return 'F';
+// Prints all vocabulary words.
+void printVocabulary(
+    const VocabularyWord words[],
+    int count
+) {
+    for (int i = 0; i < count; i++) {
+        printWord(words[i]);
     }
 }
 
-// ===============================
-// Task and TaskList
-// ===============================
+// Adds a vocabulary word to the study list.
+void insertStudyWord(
+    StudyNode*& head,
+    VocabularyWord word
+) {
+    StudyNode* newNode = new StudyNode;
 
-Task::Task() {
-    description = "";
-    priority = 1;
-    completed = false;
-}
-
-Task::Task(string taskDescription, int taskPriority) {
-    description = taskDescription;
-
-    if (isValidPriority(taskPriority)) {
-        priority = taskPriority;
-    } else {
-        priority = 1;
-    }
-
-    completed = false;
-}
-
-string Task::getDescription() const {
-    return description;
-}
-
-int Task::getPriority() const {
-    return priority;
-}
-
-bool Task::isCompleted() const {
-    return completed;
-}
-
-void Task::markComplete() {
-    completed = true;
-}
-
-bool Task::isValidPriority(int priority) {
-    return priority >= 1 && priority <= 5;
-}
-
-TaskNode::TaskNode(Task task) {
-    data = task;
-    next = nullptr;
-}
-
-TaskList::TaskList() {
-    head = nullptr;
-}
-
-TaskList::~TaskList() {
-    clear();
-}
-
-void TaskList::insertFront(Task task) {
-    TaskNode* newNode = new TaskNode(task);
+    newNode->data = word;
     newNode->next = head;
+
     head = newNode;
 }
 
-int TaskList::countTasks() const {
+// Searches the study list.
+StudyNode* findStudyWord(
+    StudyNode* head,
+    string japanese
+) {
+    StudyNode* current = head;
+
+    while (current != nullptr) {
+        if (current->data.japanese == japanese) {
+            return current;
+        }
+
+        current = current->next;
+    }
+
+    return nullptr;
+}
+
+// Counts words in the study list.
+int countStudyWords(const StudyNode* head) {
     int count = 0;
-    const TaskNode* current = head;
+
+    const StudyNode* current = head;
 
     while (current != nullptr) {
         count++;
@@ -217,125 +132,53 @@ int TaskList::countTasks() const {
     return count;
 }
 
-TaskNode* TaskList::findTask(string description) {
-    TaskNode* current = head;
+// Prints the study list.
+void printStudyList(const StudyNode* head) {
+    const StudyNode* current = head;
 
     while (current != nullptr) {
-        if (current->data.getDescription() == description) {
-            return current;
-        }
-
+        printWord(current->data);
         current = current->next;
     }
-
-    return nullptr;
 }
 
-const TaskNode* TaskList::findTask(string description) const {
-    const TaskNode* current = head;
+// Deletes all nodes from the study list.
+void clearStudyList(StudyNode*& head) {
+    StudyNode* current = head;
 
     while (current != nullptr) {
-        if (current->data.getDescription() == description) {
-            return current;
-        }
+        StudyNode* nextNode = current->next;
 
-        current = current->next;
-    }
-
-    return nullptr;
-}
-
-bool TaskList::markTaskComplete(string description) {
-    TaskNode* found = findTask(description);
-
-    if (found == nullptr) {
-        return false;
-    }
-
-    found->data.markComplete();
-    return true;
-}
-
-int TaskList::removeCompletedTasks() {
-    int removed = 0;
-
-    while (head != nullptr && head->data.isCompleted()) {
-        TaskNode* nodeToRemove = head;
-        head = head->next;
-        delete nodeToRemove;
-        removed++;
-    }
-
-    TaskNode* current = head;
-
-    while (current != nullptr && current->next != nullptr) {
-        if (current->next->data.isCompleted()) {
-            TaskNode* nodeToRemove = current->next;
-            current->next = nodeToRemove->next;
-            delete nodeToRemove;
-            removed++;
-        } else {
-            current = current->next;
-        }
-    }
-
-    return removed;
-}
-
-void TaskList::clear() {
-    TaskNode* current = head;
-
-    while (current != nullptr) {
-        TaskNode* nextNode = current->next;
         delete current;
+
         current = nextNode;
     }
 
     head = nullptr;
 }
 
-bool TaskList::isEmpty() const {
-    return head == nullptr;
-}
+// Loads vocabulary from a file.
+int loadVocabularyFromFile(
+    string filename,
+    VocabularyWord words[],
+    int maxWords
+) {
+    ifstream input(filename);
 
-// ===============================
-// InventoryReport
-// ===============================
-
-bool InventoryReport::isValidQuantity(int quantity) {
-    return quantity >= 0;
-}
-
-bool InventoryReport::isValidPrice(double price) {
-    return price >= 0.0;
-}
-
-double InventoryReport::calculateItemValue(const InventoryItem& item) {
-    if (!isValidQuantity(item.quantity) || !isValidPrice(item.price)) {
-        return 0.0;
-    }
-
-    return item.quantity * item.price;
-}
-
-int InventoryReport::readInventoryFile(string filename, InventoryItem items[], int maxItems) {
-    if (items == nullptr || maxItems <= 0) {
-        return 0;
-    }
-
-    ifstream in(filename);
-
-    if (!in.is_open()) {
+    if (!input.is_open()) {
         return 0;
     }
 
     int count = 0;
-    InventoryItem item;
 
-    while (count < maxItems &&
-           in >> item.sku >> item.name >> item.quantity >> item.price) {
-        if (isValidQuantity(item.quantity) && isValidPrice(item.price)) {
-            items[count] = item;
+    while (
+        count < maxWords &&
+        input >> words[count].japanese
+              >> words[count].english
+              >> words[count].studyLevel
+    ) {
+        if (isValidStudyLevel(words[count].studyLevel)) {
+            words[count].studied = false;
             count++;
         }
     }
@@ -343,103 +186,22 @@ int InventoryReport::readInventoryFile(string filename, InventoryItem items[], i
     return count;
 }
 
-bool InventoryReport::writeInventoryReport(string filename, const InventoryItem items[], int count) {
-    if (items == nullptr || count < 0) {
-        return false;
-    }
-
-    ofstream out(filename);
-
-    if (!out.is_open()) {
-        return false;
-    }
-
-    out << fixed << setprecision(2);
-    out << "Inventory Report" << endl;
-    out << "SKU Name Quantity Price Value" << endl;
-
-    for (int i = 0; i < count; i++) {
-        out << items[i].sku << " "
-            << items[i].name << " "
-            << items[i].quantity << " "
-            << items[i].price << " "
-            << calculateItemValue(items[i]) << endl;
-    }
-
-    out << "Total inventory value: "
-        << calculateTotalInventoryValue(items, count)
-        << endl;
-
-    return true;
-}
-
-double InventoryReport::calculateTotalInventoryValue(const InventoryItem items[], int count) {
-    if (items == nullptr || count <= 0) {
-        return 0.0;
-    }
-
-    double total = 0.0;
-
-    for (int i = 0; i < count; i++) {
-        total += calculateItemValue(items[i]);
-    }
-
-    return total;
-}
-
-int InventoryReport::findItemBySku(const InventoryItem items[], int count, string sku) {
-    if (items == nullptr || count <= 0) {
-        return -1;
-    }
-
-    for (int i = 0; i < count; i++) {
-        if (items[i].sku == sku) {
-            return i;
-        }
-    }
-
-    return -1;
-}
-
-int InventoryReport::findHighestValueItemIndex(const InventoryItem items[], int count) {
-    if (items == nullptr || count <= 0) {
-        return -1;
-    }
-
-    int highestIndex = 0;
-
-    for (int i = 1; i < count; i++) {
-        if (calculateItemValue(items[i]) > calculateItemValue(items[highestIndex])) {
-            highestIndex = i;
-        }
-    }
-
-    return highestIndex;
-}
-
-// ===============================
-// Menu helpers
-// ===============================
-
+// Checks if the menu choice is valid.
 bool isValidMenuChoice(int choice) {
-    return choice >= 0 && choice <= 4;
+    return choice >= 0 && choice <= 7;
 }
 
+// Prints the main menu.
 void printMenu() {
     cout << endl;
-    cout << "Final Project Sample Menu" << endl;
-    cout << "1. Demonstrate student scores" << endl;
-    cout << "2. Demonstrate linked task list" << endl;
-    cout << "3. Demonstrate inventory report" << endl;
-    cout << "4. Show instructions" << endl;
+    cout << "Japanese Vocabulary Study Manager" << endl;
+    cout << "1. View vocabulary" << endl;
+    cout << "2. Add vocabulary word" << endl;
+    cout << "3. Search vocabulary" << endl;
+    cout << "4. Sort by study level" << endl;
+    cout << "5. Choose existing word to study" << endl;
+    cout << "6. View study list" << endl;
+    cout << "7. Show average study level" << endl;
     cout << "0. Exit" << endl;
     cout << "Choice: ";
-}
-
-void printStudent(const Student& student) {
-    cout << student.getId() << " "
-         << student.getName() << " "
-         << "Average: " << student.getAverage() << " "
-         << "Grade: " << student.getLetterGrade()
-         << endl;
 }
