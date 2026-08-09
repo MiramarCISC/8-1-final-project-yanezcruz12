@@ -4,92 +4,184 @@
 using namespace std;
 
 int main() {
-    int choice = -1;
 
-    cout << "CISC 192 Final Project Sample" << endl;
-    cout << "Sample code is provided only as an example." << endl;
-    cout << "Delete or replace the sample code before final submission." << endl;
+    // Array that stores all vocabulary words.
+    VocabularyWord words[MAX_WORDS];
 
+    // Load the vocabulary words from the data file.
+    int count = loadVocabularyFromFile(
+        "data/vocabulary.txt",
+        words,
+        MAX_WORDS
+    );
+
+    // Head pointer for the linked study list.
+    StudyNode* studyHead = nullptr;
+
+    int choice;
+
+    // Keep showing the menu until the user chooses 0.
     do {
         printMenu();
         cin >> choice;
 
-        while (!isValidMenuChoice(choice)) {
-            cout << "Invalid choice. Enter 0-4: ";
-            cin >> choice;
+        // Make sure the menu choice is valid.
+        if (!isValidMenuChoice(choice)) {
+            cout << "Invalid menu choice." << endl;
+            continue;
         }
 
         switch (choice) {
+
+            // View all vocabulary words.
             case 1: {
-                Student student("A123", "Alex");
-                student.getScoreList().addScore(90.0);
-                student.getScoreList().addScore(80.0);
-                student.getScoreList().addScore(100.0);
-                student.getScoreList().sortAscending();
+                cout << endl;
+                cout << "Vocabulary List" << endl;
 
-                printStudent(student);
-                cout << "Score 100 found at index "
-                     << student.getScoreList().findScore(100.0)
-                     << endl;
+                printVocabulary(words, count);
 
                 break;
             }
 
+            // Add a new vocabulary word.
             case 2: {
-                TaskList tasks;
-                tasks.insertFront(Task("study", 5));
-                tasks.insertFront(Task("project", 4));
-                tasks.markTaskComplete("study");
+                if (count >= MAX_WORDS) {
+                    cout << "Vocabulary list is full." << endl;
+                    break;
+                }
 
-                cout << "Task count: " << tasks.countTasks() << endl;
-                cout << "Removed completed tasks: "
-                     << tasks.removeCompletedTasks()
-                     << endl;
-                cout << "Remaining task count: " << tasks.countTasks() << endl;
+                VocabularyWord newWord;
+
+                cout << "Japanese word: ";
+                cin >> newWord.japanese;
+
+                cout << "English meaning: ";
+                cin >> newWord.english;
+
+                cout << "Study level (1-5): ";
+                cin >> newWord.studyLevel;
+
+                // Study level must be between 1 and 5.
+                if (!isValidStudyLevel(newWord.studyLevel)) {
+                    cout << "Invalid study level." << endl;
+                    break;
+                }
+
+                newWord.studied = false;
+
+                // Add the new word to the array.
+                words[count] = newWord;
+                count++;
+
+                cout << "Vocabulary word added." << endl;
 
                 break;
             }
 
+            // Search for a Japanese word.
             case 3: {
-                InventoryItem items[MAX_INVENTORY_ITEMS];
-                int count = InventoryReport::readInventoryFile(
-                    "data/inventory.txt",
-                    items,
-                    MAX_INVENTORY_ITEMS
+                string japanese;
+
+                cout << "Enter Japanese word to search: ";
+                cin >> japanese;
+
+                int index = findWord(
+                    words,
+                    count,
+                    japanese
                 );
 
-                cout << "Read " << count << " inventory item(s)." << endl;
-                cout << "Total inventory value: "
-                     << InventoryReport::calculateTotalInventoryValue(items, count)
-                     << endl;
-
-                if (InventoryReport::writeInventoryReport(
-                        "inventory_report.txt",
-                        items,
-                        count
-                    )) {
-                    cout << "Report written to inventory_report.txt" << endl;
+                if (index == -1) {
+                    cout << "Word not found." << endl;
+                } else {
+                    printWord(words[index]);
                 }
 
                 break;
             }
 
-            case 4:
-                cout << "Use this sample only as an example. "
-                     << "Delete or replace sample code before submission."
-                     << endl;
-                break;
+            // Sort vocabulary from lowest to highest study level.
+            case 4: {
+                sortByStudyLevel(words, count);
 
-            case 0:
+                cout << "Vocabulary sorted by study level."
+                     << endl;
+
+                break;
+            }
+
+            // Search for a word and add it to the linked study list.
+            case 5: {
+                string japanese;
+
+                cout << "Enter Japanese word to study: ";
+                cin >> japanese;
+
+                int index = findWord(
+                    words,
+                    count,
+                    japanese
+                );
+
+                if (index == -1) {
+                    cout << "Word not found." << endl;
+                } else {
+                    insertStudyWord(
+                        studyHead,
+                        words[index]
+                    );
+
+                    cout << "Word added to study list."
+                         << endl;
+                }
+
+                break;
+            }
+
+            // Display all words currently in the study list.
+            case 6: {
+                cout << endl;
+                cout << "Study List" << endl;
+
+                if (studyHead == nullptr) {
+                    cout << "Study list is empty." << endl;
+                } else {
+                    printStudyList(studyHead);
+                }
+
+                break;
+            }
+
+            // Show study statistics.
+            case 7: {
+                double average =
+                    calculateAverageStudyLevel(
+                        words,
+                        count
+                    );
+
+                cout << "Average study level: "
+                     << average
+                     << endl;
+
+                cout << "Words in study list: "
+                     << countStudyWords(studyHead)
+                     << endl;
+
+                break;
+            }
+
+            // Exit the program.
+            case 0: {
                 cout << "Goodbye!" << endl;
                 break;
-
-            default:
-                cout << "Unexpected choice." << endl;
-                break;
+            }
         }
 
     } while (choice != 0);
+
+    // Delete the dynamically allocated study list nodes.
+    clearStudyList(studyHead);
 
     return 0;
 }
